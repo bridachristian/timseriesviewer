@@ -5,9 +5,8 @@ account: bridachristian
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1285661
-bundleId: 2468180
+bundleId: 2476581
 url: https://bridachristian.shinyapps.io/timeseriesviewer/
-when: 1570185631.68399
+when: 1570458742.84784
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: read_TOA5.R

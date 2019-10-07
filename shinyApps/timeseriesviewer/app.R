@@ -6,10 +6,11 @@ library(DT)
 library(ggplot2)
 library(plotly)
 library(reshape2)
+library(dplyr)
+
 
 # ---- define a function to read data in the proper format ----
 # it should be moved in a R package and imported from there!
-
 read_TOA5 = function(PATH, SEP,                           # read and import data well formatted
                      DATETIME_HEADER, DATETIME_FORMAT,
                      DATA_FROM_ROW, HEADER_ROW_NUMBER){
@@ -166,8 +167,12 @@ server <- function(input, output,session) {
   output$mytable  <- renderDataTable({
     if(!is.null(input$dataset)){
       # df  = values$df_data[,c(datetime_selected,input$select)]
+     
       df  = values$df_data[,c(DATETIME_HEADER,input$select)]
       DT::datatable(df)
+      # %>%  formatDate(
+      #   columns = DATETIME_HEADER, dateFormat = "%Y-%m-%d %H:%M",
+      #   method =  "toLocaleString",params = list("en-EN",list(year = 'numeric', month = 'numeric', timeZone = "Etc/GMT-1")))
     }
   })
   
@@ -186,24 +191,32 @@ server <- function(input, output,session) {
   # ---- Export table of information about time sampling and units ----
   output$tsPlot <- renderPlotly({
     if(!is.null(input$dataset)){
-      
-      t_start = values$time[1]
-      t_end = values$time [length(values$time )]
-      
-      # data_new = values$df_data[,c(datetime_selected,input$select)]
+     
       data_new = values$df_data[,c(DATETIME_HEADER,input$select)]
       
+      t_start = min(values$time,na.rm = T)
+      t_end = max(values$time,na.rm = T) 
+      diff_1_2 = values$time[2]-values$time[1]
+      # mytime = seq(from = t_start, to =t_end, by = diff_1_2 )
+
+      all_days = data.frame(DATETIME_HEADER = seq(from = t_start, to = t_end, by = diff_1_2))
+      colnames(all_days) = DATETIME_HEADER
       
-      # m_data =  melt(data_new, id.vars = "TIMESTAMP")
-      m_data =  melt(data_new, id.vars = DATETIME_HEADER)
-      colnames(m_data)[1] = "datetime"
-      g1 = ggplot(m_data, aes(x = datetime, y = value ))+
+      dd_complete = left_join(all_days, data_new, by = DATETIME_HEADER)
+      colnames(dd_complete) = c("datetime","value")
+      
+      # m_data =  melt(data_new, id.vars = DATETIME_HEADER)
+      # colnames(m_data)[1] = "datetime"
+      
+      # g1 = ggplot(m_data, aes(x = datetime, y = value ))+
+      g1 = ggplot(dd_complete, aes(x = datetime, y = value ))+
         geom_line()+
+        # geom_point()+
         scale_y_continuous(name = as.character(input$select))+
         # scale_x_datetime(date_breaks = "2 weeks")+
         scale_x_datetime(timezone = "Etc/GMT-1")+
         theme_bw()+
-        ggtitle(label = values$name)
+        ggtitle(label = values$name, subtitle = input$select)
       
       p1 = ggplotly(g1)
       
